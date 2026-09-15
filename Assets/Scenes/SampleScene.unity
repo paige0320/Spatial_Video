@@ -525,8 +525,12 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1278881919675084058, guid: ccb0193364edba94890c896b8d0a9ba0, type: 3}
       propertyPath: clip
-      value:
-      objectReference: {fileID: 32900000, guid: 64c98000541aa9547afdf328baf4df27, type: 3}
+      value: 
+      objectReference: {fileID: 32900000, guid: e6260260696944ad9527d838b6106845, type: 3}
+    - target: {fileID: 1278881919675084058, guid: ccb0193364edba94890c896b8d0a9ba0, type: 3}
+      propertyPath: stereoMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4201533914091704740, guid: ccb0193364edba94890c896b8d0a9ba0, type: 3}
       propertyPath: m_VideoClip
       value: 

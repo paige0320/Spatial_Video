@@ -42,7 +42,11 @@ crashlytics-build.properties
 
 # Large source/converted video assets (kept locally, not versioned)
 Assets/Videos_SDR/
+Assets/Videos_Spatial/
 Assets/\[database\] VR-20260914T141200Z-1-001/
+
+# Raw camera footage (source .MOV files, kept locally, not versioned)
+/RawFootage/
 
 # Local scratch files
 scratch_*.png

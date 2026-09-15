@@ -20,6 +20,7 @@ namespace SpatialVideo
         [SerializeField] private RenderTexture renderTexture;
 
         private VideoPlayer videoPlayer;
+        private RenderTexture runtimeRenderTexture;
 
         public StereoMode Mode => stereoMode;
 
@@ -28,7 +29,6 @@ namespace SpatialVideo
             videoPlayer = GetComponent<VideoPlayer>();
             videoPlayer.playOnAwake = false;
             videoPlayer.renderMode = VideoRenderMode.RenderTexture;
-            videoPlayer.targetTexture = renderTexture;
             videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
             videoPlayer.SetTargetAudioSource(0, GetComponent<AudioSource>());
             videoPlayer.isLooping = true;
@@ -42,6 +42,11 @@ namespace SpatialVideo
             {
                 Play(clip);
             }
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseRuntimeRenderTexture();
         }
 
         // 讓 Inspector 上「Spatial Video Player (Script)」元件裡的 Clip 欄位
@@ -62,7 +67,48 @@ namespace SpatialVideo
         {
             clip = newClip;
             videoPlayer.clip = clip;
+
+            // RT 的長寬一定要跟 clip 原生解析度一致，不然 SBS 影片左右眼的分界
+            // 會跟 shader 裡假設的 UV 中線對不上（畫面被裁切/擠壓，看起來就是變形）。
+            // 不同來源的 SBS 影片解析度不一定一樣（自己拍的 3840x1080 vs 下載的
+            // 1920x1080），所以改成依 clip 大小在執行期動態建立，不再依賴 Inspector
+            // 手動配一顆尺寸剛好對上的 RenderTexture 資產（很容易忘記換而對不上）。
+            EnsureRenderTextureMatchesClip(clip);
+            videoPlayer.targetTexture = renderTexture;
+            if (screenRenderer != null)
+            {
+                screenRenderer.material.mainTexture = renderTexture;
+            }
+
             videoPlayer.Play();
+        }
+
+        private void EnsureRenderTextureMatchesClip(VideoClip forClip)
+        {
+            int width = (int)forClip.width;
+            int height = (int)forClip.height;
+
+            if (renderTexture != null && renderTexture.width == width && renderTexture.height == height)
+            {
+                return;
+            }
+
+            ReleaseRuntimeRenderTexture();
+            runtimeRenderTexture = new RenderTexture(width, height, 0);
+            renderTexture = runtimeRenderTexture;
+        }
+
+        private void ReleaseRuntimeRenderTexture()
+        {
+            if (runtimeRenderTexture == null) return;
+
+            if (videoPlayer != null && videoPlayer.targetTexture == runtimeRenderTexture)
+            {
+                videoPlayer.targetTexture = null;
+            }
+            runtimeRenderTexture.Release();
+            Destroy(runtimeRenderTexture);
+            runtimeRenderTexture = null;
         }
 
         public void SetStereoMode(StereoMode mode)
@@ -71,29 +117,15 @@ namespace SpatialVideo
             ApplyStereoMode();
         }
 
-        // 目前素材都是平面 2D 影片，一律當作 Mono 鋪滿畫面。
-        // 之後換成真正的 180/360 spatial（stereo）影片時，
-        // 在這裡依 stereoMode 把 UV 切成左右半（SideBySide）或上下半（TopAndBottom），
-        // 分別餵給左右眼的攝影機/材質即可，播放流程本身不用改。
+        // 材質用的是 SpatialVideo/StereoUnlit shader：因為 Quest 走 single-pass
+        // instanced，兩眼共用同一個 draw call，沒辦法用 mainTextureScale/Offset
+        // 這種材質屬性去分左右眼（那樣兩眼會看到一樣的半邊）。真正的左右眼分流
+        // 是 shader 內部用 unity_StereoEyeIndex 做的，這裡只是把模式告訴 shader。
         private void ApplyStereoMode()
         {
             if (screenRenderer == null) return;
 
-            switch (stereoMode)
-            {
-                case StereoMode.Mono:
-                    screenRenderer.material.mainTextureScale = new Vector2(1f, 1f);
-                    screenRenderer.material.mainTextureOffset = Vector2.zero;
-                    break;
-                case StereoMode.SideBySide:
-                    screenRenderer.material.mainTextureScale = new Vector2(0.5f, 1f);
-                    screenRenderer.material.mainTextureOffset = Vector2.zero;
-                    break;
-                case StereoMode.TopAndBottom:
-                    screenRenderer.material.mainTextureScale = new Vector2(1f, 0.5f);
-                    screenRenderer.material.mainTextureOffset = new Vector2(0f, 0.5f);
-                    break;
-            }
+            screenRenderer.material.SetFloat("_StereoMode", (float)stereoMode);
         }
     }
 }
