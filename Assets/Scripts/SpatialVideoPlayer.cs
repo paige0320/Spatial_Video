@@ -31,7 +31,7 @@ namespace SpatialVideo
             videoPlayer.renderMode = VideoRenderMode.RenderTexture;
             videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
             videoPlayer.SetTargetAudioSource(0, GetComponent<AudioSource>());
-            videoPlayer.isLooping = true;
+            videoPlayer.isLooping = false;
 
             ApplyStereoMode();
         }
