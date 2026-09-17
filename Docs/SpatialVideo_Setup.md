@@ -75,12 +75,11 @@ SpatialVideoPlayer (VideoPlayer, AudioSource, SpatialVideoPlayer.cs)
 **場景相機 Rig:**
 `GameObject > XR > XR Origin (VR)` 建立,放在世界原點 `(0,0,0)`,結構為 `XR Origin > Camera Offset > Main Camera`(Camera Offset 預設身高偏移 1.1176)。
 
-**⚠️ Quest Link(Editor Play Mode 直接用頭顯預覽)還沒設好:**
-目前 `XRGeneralSettingsPerBuildTarget.asset` 裡只有 **Android** 平台掛了 OpenXR loader,**PC, Mac & Linux Standalone** 分頁是空的。這代表在 Editor 裡直接按 Play、透過 Quest Link/Air Link 預覽,目前還看不到東西(Windows 端不會初始化任何 XR loader)。要能用 Quest Link 預覽,需要手動:
-1. `Edit > Project Settings > XR Plug-in Management`,切到光 **PC, Mac & Linux Standalone** 分頁,勾選 `OpenXR`。
-2. 左側 `OpenXR` 子頁面同樣切到 PC 分頁,確認 Interaction Profile 至少有 `Oculus Touch Controller Profile`。
-
-在這個弄好之前,驗證效果**只能靠實機 build**(見第 7 節),不能用 Quest Link。
+**✅ Quest Link(Editor Play Mode 直接用頭顯預覽)設定步驟:**
+1. `Edit > Project Settings > XR Plug-in Management`,切到 **PC, Mac & Linux Standalone** 分頁,勾選 `OpenXR`。
+2. 左側 `OpenXR` 子頁面同樣切到 PC 分頁,**`Enabled Interaction Profiles`** 那個方框預設是空的——這個不是打勾式的,要點方框右下角的 **`+`** 才會跳出選單,加一個 `Oculus Touch Controller Profile`(或 `Meta Quest Touch Pro Controller Profile`,Quest 3 的 Touch Plus 手把用這兩個都能動,只是 Plus 專屬功能沒有)。
+   - **這兩個是分開的區塊**:下面另外有一個 `OpenXR Feature Groups`,那裡的 `Meta Quest Support` 是給「功能」開關用的,跟上面 `Enabled Interaction Profiles`(給「手把型號綁定」用的)是兩件事,兩個都要設,不要只設一個。
+3. 頭顯用 USB 或 Air Link 連進 **Quest Link** 模式後,Editor 直接按 Play 即可,不用重新 build,比實機測試快很多,建議之後有 XR 互動相關改動優先用這個測。
 
 ## 4. 平面 2D 影片格式規範(`Assets/Videos_SDR/`)
 
@@ -186,3 +185,50 @@ else if (_StereoMode > 0.5) // SideBySide
   # package name 可以用 aapt dump badging 那個 apk 查出來,通常是 com.DefaultCompany.Spatial_Video
   adb shell am start -n com.DefaultCompany.Spatial_Video/com.unity3d.player.UnityPlayerActivity
   ```
+
+## 8. 手把 UI 互動(播放列按鈕)
+
+播放器下方現在有一塊 YouTube 風格的控制面板(進度條、Play/Pause、-10s/+10s、Replay、Speed),可以用 Quest 手把的雷射光點選。這塊做起來比預期麻煩很多,以下記錄怎麼做、以及踩過的坑。
+
+### 8.1 元件總覽
+
+| 檔案/物件 | 用途 |
+|---|---|
+| `Assets/Scripts/SpatialVideoPlayerControls.cs` | 掛在 `SpatialVideoPlayer` 上,把 UI 按鈕/滑桿接到 VideoPlayer(Play/Pause、快轉、Replay、調速、進度同步) |
+| `Assets/Scripts/SimpleRayVisual.cs` | 掛在每支手把的 `LineVisual` 物件上,自己畫雷射光、自己判定點擊(原因見 8.3) |
+| `Assets/Scripts/TriggerDebugLogger.cs` | 診斷用小工具,繞過 XRI 直接讀扳機鍵原始訊號,印到 Console。平時不用管,除錯時很好用 |
+| `Assets/Samples/XR Interaction Toolkit/3.5.0/Starter Assets/` | 透過 Package Manager 匯入的官方樣例,`XR Origin (XR Rig)` prefab 提供手把追蹤+雷射光互動的基礎 |
+| 場景裡的 `Controls Canvas` | World Space Canvas,掛在 `SpatialVideoPlayer` 底下,`TrackedDeviceGraphicRaycaster` 元件(理論上用來給官方系統判定點擊,但實際判定改走 8.3 的繞道方案) |
+
+### 8.2 ⚠️ 最重要的教訓:PrefabInstance 不要手動改 YAML
+
+一開始想直接手寫場景/prefab 的 YAML 檔案加手把、加 UI,**兩次把 Unity 整個弄到開啟就 crash**(native crash,在 `MergePrefabInstanceInfosDuringLoad` 底層炸掉,不是正常的錯誤訊息)。原因是手動加的 `PrefabInstance` 修改區塊(尤其是引用外部 prefab、或欄位跟 Unity 實際序列化格式有細微差異時),Unity 這個版本的 prefab merge 邏輯處理不了,會直接 segfault,連 log 都不會正常報錯。
+
+**結論:凡是要新增/修改 GameObject 層級結構(尤其牽涉到 PrefabInstance)的東西,一定要在 Editor 裡用滑鼠拖拉/勾選做,不要手動編輯 `.unity` / `.prefab` 檔案。** 單純改現有元件的欄位數值(位置、文字、顏色、勾選框)是安全的,可以直接改檔案;但新增物件、新增 PrefabInstance、新增元件到 PrefabInstance 底下的子物件,一定要走 Editor UI。
+
+### 8.3 為什麼要自己寫 `SimpleRayVisual`,不用官方的 Near-Far Interactor
+
+`XR Origin (XR Rig)` 官方 prefab 本身有一套完整的手把互動系統(`Near-Far Interactor` + `EventSystem` + `TrackedDeviceGraphicRaycaster`)。設定上全部看起來都是對的(Interaction Profile、UI Press Input binding、Select Input binding 都正確指到 `XRI Left/Right Interaction` 動作),雷射光 hover 到按鈕也真的有反應(按鈕會有 highlight),但**按下扳機鍵就是不會觸發 `Button.onClick`**,查了非常久都沒找到卡在哪一層。
+
+用 `TriggerDebugLogger.cs` 直接繞過 XRI、用 `UnityEngine.InputSystem.XR.XRController` 讀原始扳機值,確認硬體訊號本身完全正常(按下去 Console 會印出 0~1 的類比值)。所以問題確定卡在 XRI 的 `Near-Far Interactor → EventSystem` 這段中間的判定鏈路裡,而不是輸入或設定本身。
+
+因為debug 不出根本原因,`SimpleRayVisual.cs` 直接把整條路自己接:
+1. 用 `LineRenderer` 自己畫線,跟 `targetPlane`(`Controls Canvas` 的 Transform)算平面交點當作雷射光落點,超過落點的地方裁掉,並生成一顆小球標示落點方便瞄準。
+2. 用跟 `TriggerDebugLogger` 一樣的方式直接讀 `XRController` 的 `trigger` 原始值判斷有沒有按下。
+3. 落點如果落在某個 `Button`/`Slider` 的 `RectTransform.rect` 範圍內(用 `RectTransform.InverseTransformPoint` 轉成該元件的本地座標判斷),扳機鍵剛按下的那一刻直接呼叫 `button.onClick.Invoke()` 或設定 `slider.value`。
+
+完全不經過 `XRInteractionManager`/`EventSystem`/`TrackedDeviceGraphicRaycaster`,所以官方系統設定對不對都不影響它能不能用。
+
+### 8.4 要幫新的手把/新的 UI 面板加上這套怎麼做
+
+1. Hierarchy 找到該手把底下的 `LineVisual` 物件(在 `XR Origin (XR Rig) > Camera Offset > Left/Right Controller` 底下,`Near-Far Interactor` 附近)。
+2. 取消勾選它身上原本的 **Curve Visual Controller**(官方視覺效果,跟我們自己的畫線衝突,關掉避免互搶)。
+3. Add Component 加 **Simple Ray Visual**。
+4. **Target Plane** 欄位拖上要互動的 Canvas 的 Transform。
+5. **Is Left Hand** 勾選框:左手手把打勾,右手手把取消勾選(決定要讀哪隻手的 `XRController` 裝置)。
+6. `SimpleRayVisual` 會自動抓 `targetPlane` 底下所有的 `Button`/第一個 `Slider`,不用額外指定要互動哪些元件。
+
+### 8.5 其他小改動
+
+- `SpatialVideoPlayer.cs` 的 `videoPlayer.isLooping` 改成 `false`——影片播完就停在最後一幀,不會自動重播。
+- Play/Pause 按鈕文字用 `▶` / `❚❚` 符號(Unicode 字元直接當文字,不用額外圖片資源),-10s/+10s 用 `◀◀`/`▶▶`,Replay 用 `↺`。用的是舊版 `UI > Legacy > Text/Button`(不是 TextMeshPro),因為 `SpatialVideoPlayerControls.cs` 的欄位型別是 `UnityEngine.UI.Text`/`Button`。
