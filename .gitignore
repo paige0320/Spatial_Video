@@ -43,10 +43,20 @@ crashlytics-build.properties
 # Large source/converted video assets (kept locally, not versioned)
 Assets/Videos_SDR/
 Assets/Videos_Spatial/
-Assets/\[database\] VR-20260914T141200Z-1-001/
 
 # Raw camera footage (source .MOV files, kept locally, not versioned)
 /RawFootage/
 
 # Local scratch files
 scratch_*.png
+
+# 本機工具／暫存（不要上傳）
+.utmp/
+.vsconfig
+Spatial_Video_BurstDebugInformation_DoNotShip/
+# MCP for Unity：只在本機使用（Packages/ 底下的連結指到 unity-mcp-beta），不上傳
+unity-mcp-beta/
+Packages/com.coplaydev.unity-mcp
+Assets/Screenshots/
+Assets/Screenshots.meta
+Docs/SpatialVideo_Setup.md

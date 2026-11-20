@@ -11,7 +11,6 @@ namespace SpatialVideo
     }
 
     [RequireComponent(typeof(VideoPlayer))]
-    [RequireComponent(typeof(AudioSource))]
     public class SpatialVideoPlayer : MonoBehaviour
     {
         [SerializeField] private VideoClip clip;
@@ -29,8 +28,12 @@ namespace SpatialVideo
             videoPlayer = GetComponent<VideoPlayer>();
             videoPlayer.playOnAwake = false;
             videoPlayer.renderMode = VideoRenderMode.RenderTexture;
-            videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
-            videoPlayer.SetTargetAudioSource(0, GetComponent<AudioSource>());
+            // 聲音用 Direct 模式直接送到系統輸出（頭盔喇叭／耳機）。
+            videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
+            videoPlayer.controlledAudioTrackCount = 1;
+            videoPlayer.EnableAudioTrack(0, true);
+            videoPlayer.SetDirectAudioMute(0, false);
+            videoPlayer.SetDirectAudioVolume(0, 1f);
             videoPlayer.isLooping = false;
 
             ApplyStereoMode();
@@ -70,9 +73,8 @@ namespace SpatialVideo
 
             // RT 的長寬一定要跟 clip 原生解析度一致，不然 SBS 影片左右眼的分界
             // 會跟 shader 裡假設的 UV 中線對不上（畫面被裁切/擠壓，看起來就是變形）。
-            // 不同來源的 SBS 影片解析度不一定一樣（自己拍的 3840x1080 vs 下載的
-            // 1920x1080），所以改成依 clip 大小在執行期動態建立，不再依賴 Inspector
-            // 手動配一顆尺寸剛好對上的 RenderTexture 資產（很容易忘記換而對不上）。
+            // 不同來源的 SBS 影片解析度不一定一樣（自己拍的 3840x1080、下載的
+            // 1920x1080），所以依 clip 大小在執行期自動建立剛好吻合的 RenderTexture。
             EnsureRenderTextureMatchesClip(clip);
             videoPlayer.targetTexture = renderTexture;
             if (screenRenderer != null)
