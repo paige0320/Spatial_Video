@@ -7,8 +7,7 @@
 - Meta XR SDK **209**（Quest 3 原廠手把模型、手把射線）
 - 支援影片：Side-by-Side（SBS，左右並排）、Top-and-Bottom、一般 2D 影片
 
-📄 **學生講義（一步一步照做）**：[Docs/SpatialVideo_Shoot_and_View.md](Docs/SpatialVideo_Shoot_and_View.md)
-📘 **老師教學手冊（原理、課程規劃、常見問題）**：[Docs/SpatialVideo_Teaching_Guide.md](Docs/SpatialVideo_Teaching_Guide.md)
+📄 **詳細步驟講義（一步一步照做）**：[Docs/SpatialVideo_Shoot_and_View.md](Docs/SpatialVideo_Shoot_and_View.md)
 
 ---
 
@@ -80,11 +79,24 @@ ffmpeg -i IMG_1234.MOV -filter_complex "[0:v:view:0][0:v:view:1]hstack[v]" -map 
 | ffmpeg 報錯 | 版本要 7.1 以上：`ffmpeg -version` |
 | Unity 報 `WindowsVideoMedia error` | `Assets/` 裡放了原始 `.MOV`，刪掉 |
 | 兩個畫面並排／沒有景深 | **Stereo Mode** 要選 **SideBySide** |
-| 畫面上下有黑邊變扁長條 | 網路下載的影片帶有 3D 標記，見[教學手冊 5.3](Docs/SpatialVideo_Teaching_Guide.md#53-轉完檢查) |
+| 畫面上下有黑邊變扁長條 | 網路下載的影片帶有 3D 標記，用這行拿掉：`ffmpeg -i 影片.mp4 -c copy -bsf:v "filter_units=remove_types=6" 影片_fixed.mp4` |
 | 看不到手把／沒有射線 | 拿起手把按任一鍵喚醒（頭盔可能切到手勢追蹤） |
 | Quest Link 預覽沒聲音 | Windows 喇叭輸出切到「耳機 (Oculus Virtual Audio Device)」 |
 
-更多問題見[教學手冊第 8 節](Docs/SpatialVideo_Teaching_Guide.md#8-常見問題排除)；專案結構與修改方式見[第 9 節](Docs/SpatialVideo_Teaching_Guide.md#9-專案結構與播放器操作)。
+更多問題見[詳細步驟講義](Docs/SpatialVideo_Shoot_and_View.md#卡住了常見問題)。
+
+## 想改播放器？
+
+Hierarchy 選 **SpatialVideoPlayer**，在 Inspector 調整：
+
+| 想做的事 | 怎麼改 |
+|---|---|
+| 換影片 | **Spatial Video Player (Script) > Clip** 換成別的影片 |
+| 播一般 2D 影片 | **Stereo Mode** 選 **Mono** |
+| 上下排列的 3D 影片 | **Stereo Mode** 選 **TopAndBottom** |
+| 螢幕大一點／遠一點 | 展開後選 **Screen**，改 Transform 的 Scale（維持 16:9，例如 4.8 × 2.7）和 Position 的 Z |
+| 改播放列外觀 | 展開 **Canvas**，按鈕、文字都是一般 Unity UI |
+| 新增自己的 UI 面板 | 新增 World Space Canvas → 對它按右鍵 → **Interaction SDK > Add Ray Interaction to Canvas** |
 
 ---
 
