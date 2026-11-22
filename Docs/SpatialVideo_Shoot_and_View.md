@@ -55,13 +55,26 @@
 1. 在影片所在的資料夾開終端機：
    - **Windows**：在資料夾空白處按右鍵 → **在終端機中開啟**
    - **Mac**：Finder 對資料夾按右鍵 → **服務 > 新增位於檔案夾位置的終端機視窗**
-2. 貼上這行（把 `IMG_1234` 換成你的檔名），按 Enter：
+2. 先確認是不是空間影片。貼上這行（把 `IMG_1234` 換成你的檔名），按 Enter：
+
+```bash
+ffprobe -v error -select_streams v:0 -show_entries stream_side_data=side_data_type -of default=nw=1 IMG_1234.MOV
+```
+
+| 畫面出現 | 意思 |
+|---|---|
+| `side_data_type=Stereo 3D` | ✅ 是空間影片，繼續下一步 |
+| 什麼都沒有 | ❌ 不是空間影片：傳檔時被轉成 2D，或拍攝時沒切到「空間」模式 → 回到第 2 步重新傳 |
+
+3. 轉檔。貼上這行（把兩個 `IMG_1234` 都換成你的檔名），按 Enter：
 
 ```bash
 ffmpeg -i IMG_1234.MOV -filter_complex "[0:v:view:0][0:v:view:1]hstack[v]" -map "[v]" -map 0:a:0 -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 128k IMG_1234_SBS.mp4
 ```
 
-3. 跑完會多一個 `IMG_1234_SBS.mp4`。打開來看：應該是**左右兩個幾乎一樣的畫面並排**（仔細看左右有一點點位移，這就是立體感的來源）。
+   過程中出現 `VPS VUI not supported` 之類的警告不用理會。
+
+4. 跑完會多一個 `IMG_1234_SBS.mp4`。打開來看：應該是**左右兩個幾乎一樣的畫面並排**（仔細看左右有一點點位移，這就是立體感的來源）。
 
 ---
 
