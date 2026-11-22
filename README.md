@@ -23,15 +23,3 @@ Unity **6000.3.23f1** · OpenXR · Meta XR SDK 209
    ```
 4. **放進專案**：用 Unity 開啟本專案（第一次要連網下載套件）→ 開 `Assets/Scenes/SampleScene` → 影片拖進 `Assets/Videos_Spatial/` → 選 **SpatialVideoPlayer**，**Clip** 設成你的影片、**Stereo Mode** 選 **SideBySide** → 存檔。
 5. **裝到頭盔**：頭盔接 USB → **File > Build Profiles > Android > Build And Run**。
-
-頭盔裡用手把射線點播放列（暫停、快轉／倒退 10 秒、重播、調速、進度條）。
-
-## 常見問題
-
-| 狀況 | 解法 |
-|---|---|
-| 沒有立體感 | 傳檔時被轉成 2D，重看步驟 2 |
-| 看到兩個畫面並排 | **Stereo Mode** 選 **SideBySide** |
-| Unity 報 `WindowsVideoMedia error` | 刪掉 `Assets/` 裡的原始 `.MOV` |
-| 看不到手把／射線 | 拿起手把按任一鍵喚醒 |
-| Quest Link 預覽沒聲音 | Windows 輸出切到「耳機 (Oculus Virtual Audio Device)」 |
