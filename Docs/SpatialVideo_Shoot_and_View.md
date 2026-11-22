@@ -11,7 +11,7 @@
 |---|---|
 | **iPhone** | 15 Pro / 15 Pro Max、16 / 16 Plus / 16 Pro / 16 Pro Max、17 / 17 Pro / 17 Pro Max（**iPhone Air、16e 不能拍**） |
 | **頭盔** | Meta Quest 3 / 3S，已開**開發者模式** |
-| **電腦** | Windows 或 Mac，已裝好 **Unity 6000.3.23f1**（含 Android Build Support）和 **ffmpeg 7.1 以上** |
+| **電腦** | Windows 或 Mac，已裝好 **Unity 6000.3.23f1**（含 Android Build Support）和 **ffmpeg 7.1 以上**（安裝方法見[附錄：安裝 ffmpeg](#附錄安裝-ffmpeg)） |
 | **線材** | 可以傳資料的 USB-C 線（只能充電的線不行） |
 
 ---
@@ -115,6 +115,51 @@ ffmpeg -i IMG_1234.MOV -filter_complex "[0:v:view:0][0:v:view:1]hstack[v]" -map 
 | Build And Run 找不到頭盔 | 確認開發者模式、頭盔裡按了「允許 USB 偵錯」、換一條可傳資料的線 |
 | 看不到手把或射線 | 拿起手把按任一鍵把它喚醒 |
 | 看了會頭暈 | 拍攝時晃太多或主角太近 → 照「6 個重點」重拍 |
+
+---
+
+## 附錄：安裝 ffmpeg
+
+裝完一定要**關掉終端機再重新打開**，不然會找不到 ffmpeg。
+
+### Windows（10／11）
+
+1. 開始選單搜尋 **終端機**（或 PowerShell）並打開。
+2. 貼上這行，按 Enter（第一次用會問是否同意條款，輸入 `Y` 再按 Enter）：
+   ```
+   winget install Gyan.FFmpeg
+   ```
+3. 顯示「已成功安裝」後，**關掉終端機再重新打開**。
+4. 輸入 `ffmpeg -version`，第一行出現 `ffmpeg version 7.1` 以上（例如 `8.x`、`9.x`）就完成了。
+
+**不能用 `winget` 時（例如學校電腦）：**
+
+1. 到 https://www.gyan.dev/ffmpeg/builds/ 下載 **ffmpeg-release-essentials.zip**。
+2. 解壓縮到 `C:\ffmpeg`，確認有 `C:\ffmpeg\bin\ffmpeg.exe`。
+3. 開始選單搜尋 **編輯系統環境變數** → **環境變數** → 上方「使用者變數」點 **Path** → **編輯** → **新增**，填入 `C:\ffmpeg\bin` → 全部按確定。
+4. 重開終端機，輸入 `ffmpeg -version` 確認。
+
+### Mac
+
+1. 打開 **終端機**（Launchpad → 其他 → 終端機）。
+2. 還沒有 Homebrew 的話，先貼這行，照畫面輸入電腦密碼：
+   ```
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+   裝完後畫面最後的 **Next steps** 會列出兩行指令，也複製貼上執行。
+3. 安裝 ffmpeg：
+   ```
+   brew install ffmpeg
+   ```
+4. 重開終端機，輸入 `ffmpeg -version` 確認。
+
+### 安裝時的常見問題
+
+| 狀況 | 解法 |
+|---|---|
+| `ffmpeg 不是內部或外部命令`／`command not found` | 終端機沒重開，或 Path 沒設好 |
+| 版本低於 7.1 | Windows：`winget upgrade Gyan.FFmpeg`；Mac：`brew upgrade ffmpeg` |
+| 沒有管理員權限 | 用 Windows 的手動方法，Path 加在「使用者變數」不需要管理員權限 |
 
 ---
 
