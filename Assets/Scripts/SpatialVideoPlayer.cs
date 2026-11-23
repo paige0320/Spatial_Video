@@ -28,12 +28,6 @@ namespace SpatialVideo
             videoPlayer = GetComponent<VideoPlayer>();
             videoPlayer.playOnAwake = false;
             videoPlayer.renderMode = VideoRenderMode.RenderTexture;
-            // 聲音用 Direct 模式直接送到系統輸出（頭盔喇叭／耳機）。
-            videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
-            videoPlayer.controlledAudioTrackCount = 1;
-            videoPlayer.EnableAudioTrack(0, true);
-            videoPlayer.SetDirectAudioMute(0, false);
-            videoPlayer.SetDirectAudioVolume(0, 1f);
             videoPlayer.isLooping = false;
 
             ApplyStereoMode();
@@ -69,7 +63,16 @@ namespace SpatialVideo
         public void Play(VideoClip newClip)
         {
             clip = newClip;
+            videoPlayer.Stop();
             videoPlayer.clip = clip;
+
+            // 聲音用 Direct 模式直接送到系統輸出（頭盔喇叭／耳機）。
+            // 要在設定 clip 之後才設定音軌，不然影片播放時聲音不會出來。
+            videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
+            videoPlayer.controlledAudioTrackCount = 1;
+            videoPlayer.EnableAudioTrack(0, true);
+            videoPlayer.SetDirectAudioMute(0, false);
+            videoPlayer.SetDirectAudioVolume(0, 1f);
 
             // RT 的長寬一定要跟 clip 原生解析度一致，不然 SBS 影片左右眼的分界
             // 會跟 shader 裡假設的 UV 中線對不上（畫面被裁切/擠壓，看起來就是變形）。
